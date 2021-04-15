@@ -1,11 +1,13 @@
 import * as aws from 'aws-sdk';
 import { PromiseResult } from 'aws-sdk/lib/request';
+import { MessageBodyAttributeMap } from 'aws-sdk/clients/sqs';
 import { v4 as uuid } from 'uuid';
 import { S3PayloadMeta } from './types';
 import {
     buildS3PayloadWithExtendedCompatibility,
     buildS3Payload,
     createExtendedCompatibilityAttributeMap,
+    computeMsgAttributeSize,
 } from './util';
 
 // 256KiB
@@ -31,6 +33,7 @@ export interface SqsMessageOptions {
     DelaySeconds?: number;
     MessageDeduplicationId?: string;
     MessageGroupId?: string;
+    MessageAttributes?: MessageBodyAttributeMap;
 }
 
 export class SqsProducer {
@@ -82,7 +85,8 @@ export class SqsProducer {
 
     async sendJSON(message: unknown, options: SqsMessageOptions = {}): Promise<any> {
         const messageBody = JSON.stringify(message);
-        const msgSize = Buffer.byteLength(messageBody, 'utf-8');
+        const msgSize = Buffer.byteLength(messageBody, 'utf-8')
+            + computeMsgAttributeSize(options.MessageAttributes);
 
         if ((msgSize > this.messageSizeThreshold && this.largePayloadThoughS3) || this.allPayloadThoughS3) {
             const payloadId = uuid();
@@ -122,6 +126,7 @@ export class SqsProducer {
                 DelaySeconds: options.DelaySeconds,
                 MessageDeduplicationId: options.MessageDeduplicationId,
                 MessageGroupId: options.MessageGroupId,
+                MessageAttributes: options.MessageAttributes,
             })
             .promise();
 
@@ -139,8 +144,8 @@ export class SqsProducer {
         options: SqsMessageOptions = {}
     ): Promise<PromiseResult<aws.SQS.SendMessageResult, aws.AWSError>> {
         const messageAttributes = this.extendedLibraryCompatibility
-            ? createExtendedCompatibilityAttributeMap(msgSize)
-            : {};
+            ? createExtendedCompatibilityAttributeMap(msgSize, options.MessageAttributes)
+            : options.MessageAttributes;
         return await this.sqs
             .sendMessage({
                 QueueUrl: this.queueUrl,
