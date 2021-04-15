@@ -8,7 +8,8 @@
         "test": "jest",
         "build": "yarn clean && tsc",
         "clean": "rm -rf ./dist/*",
-        "prepublishOnly": "yarn build"
+        "prepublishOnly": "yarn build",
+        "postinstall": "tsc --outDir ./dist"
     },
     "dependencies": {
         "uuid": "^7.0.2"
