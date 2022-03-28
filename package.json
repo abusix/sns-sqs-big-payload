@@ -12,7 +12,7 @@
         "postinstall": "tsc --outDir ./dist"
     },
     "dependencies": {
-        "uuid": "^7.0.2"
+        "uuid": "^8.3.2"
     },
     "devDependencies": {
         "@types/jest": "^25.1.4",
@@ -61,6 +61,6 @@
         "payload"
     ],
     "peerDependencies": {
-        "aws-sdk": "^2.814.0"
+        "aws-sdk": "^2.1102.0"
     }
 }
